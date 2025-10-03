@@ -36,7 +36,8 @@ TEST(TDynamicMatrix, copied_matrix_has_its_own_memory)
 
 TEST(TDynamicMatrix, can_get_size)
 {
-  ADD_FAILURE();
+	TDynamicMatrix<int> m(5);
+	ASSERT_EQ(m.size(), 5);
 }
 
 TEST(TDynamicMatrix, can_set_and_get_element)
