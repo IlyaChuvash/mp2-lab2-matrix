@@ -27,6 +27,8 @@ public:
   {
     if (sz == 0)
       throw out_of_range("Vector size should be greater than zero");
+    if (sz > MAX_VECTOR_SIZE)
+        throw out_of_range("Vector size exceeds MAX_VECTOR_SIZE");
     pMem = new T[sz]();// {}; // У типа T д.б. констуктор по умолчанию
   }
   TDynamicVector(T* arr, size_t s) : sz(s)
@@ -86,26 +88,26 @@ public:
   // индексация
   T& operator[](size_t ind)
   {
-      return this->pMem[ind]
+      return this->pMem[ind];
   }
   const T& operator[](size_t ind) const
   {
-      return this->pMem[ind]
+      return this->pMem[ind];
   }
   // индексация с контролем
   T& at(size_t ind)
   {
-      if (ind > sz) {
+      if (ind >= sz) {
           throw out_of_range("Out of range");
       }
-      return this->pMem[ind]
+      return this->pMem[ind];
   }
   const T& at(size_t ind) const
   {
-      if (ind > sz) {
+      if (ind >= sz) {
           throw out_of_range("Out of range");
       }
-      return this->pMem[ind]
+      return this->pMem[ind];
   }
 
   // сравнение
@@ -135,43 +137,64 @@ public:
   }
 
   // скалярные операции
-  TDynamicVector operator+(T val)
+  TDynamicVector operator+(T val) const
   {
+	  TDynamicVector result(sz);
       for (size_t i = 0; i < sz; i++) {
-          pMem[i] += val;
+          result[i] = pMem[i] + val;
       }
+      return result;
   }
-  TDynamicVector operator-(T val)
+  TDynamicVector operator-(T val) const
   {
+      TDynamicVector result(sz);
       for (size_t i = 0; i < sz; i++) {
-          pMem[i] -= val;
+          result[i] = pMem[i] - val;
       }
+      return result;
   }
-  TDynamicVector operator*(T val)
+  TDynamicVector operator*(T val) const
   {
+      TDynamicVector result(sz);
       for (size_t i = 0; i < sz; i++) {
-          pMem[i] *= val;
+          result[i] = pMem[i] * val;
       }
+      return result;
   }
 
   // векторные операции
-  TDynamicVector operator+(const TDynamicVector& v)
+  TDynamicVector operator+(const TDynamicVector& v) const
   {
+      if (sz != v.sz) {
+          throw std::invalid_argument("Vectors sizes are not equal");
+	  }
+	  TDynamicVector result(sz);
       for (size_t i = 0; i < sz; i++) {
-          pMem[i] += v.pMem[i];
+          result[i] = pMem[i] + v.pMem[i];
       }
+      return result;
   }
-  TDynamicVector operator-(const TDynamicVector& v)
+  TDynamicVector operator-(const TDynamicVector& v) const
   {
-      for (size_t i = 0; i < sz; i++) {
-          pMem[i] -= v.pMem[i];
+      if (sz != v.sz) {
+          throw std::invalid_argument("Vectors sizes are not equal");
       }
+      TDynamicVector result(sz);
+      for (size_t i = 0; i < sz; i++) {
+          result[i] = pMem[i] - v.pMem[i];
+      }
+      return result;
   }
-  T operator*(const TDynamicVector& v) noexcept(noexcept(T()))
+  T operator*(const TDynamicVector& v) const noexcept(noexcept(T()))
   {
-      for (size_t i = 0; i < sz; i++) {
-          pMem[i] *= v.pMem[i];
+      if (sz != v.sz) {
+          throw std::invalid_argument("Vectors sizes are not equal");
       }
+	  T result = 0;
+      for (size_t i = 0; i < sz; i++) {
+          result += pMem[i] * v.pMem[i];
+      }
+	  return result;
   }
 
   friend void swap(TDynamicVector& lhs, TDynamicVector& rhs) noexcept
@@ -206,11 +229,15 @@ class TDynamicMatrix : private TDynamicVector<TDynamicVector<T>>
 public:
   TDynamicMatrix(size_t s = 1) : TDynamicVector<TDynamicVector<T>>(s)
   {
+    if (s > MAX_MATRIX_SIZE)
+        throw std::out_of_range("Matrix size exceeds MAX_MATRIX_SIZE");
     for (size_t i = 0; i < sz; i++)
-      pMem[i] = TDynamicVector<T>(sz);
+        pMem[i] = TDynamicVector<T>(sz);
   }
 
   using TDynamicVector<TDynamicVector<T>>::operator[];
+  using TDynamicVector<TDynamicVector<T>>::at;
+  using TDynamicVector<TDynamicVector<T>>::size;
   
   // сравнение
   bool operator==(const TDynamicMatrix& m) const noexcept
@@ -230,25 +257,30 @@ public:
   }
 
   // матрично-скалярные операции
-  TDynamicVector<T> operator*(const T& val)
+  TDynamicMatrix<T> operator*(const T& val)
   {
+	  TDynamicMatrix<T> result(sz);
       for (size_t i = 0; i < sz; i++) {
           for (size_t j = 0; j < sz; j++) {
-              pMem[i][j] *= val;
+              result[i][j] = pMem[i][j] * val;
           }
       }
+	  return result;
   }
 
   // матрично-векторные операции
   TDynamicVector<T> operator*(const TDynamicVector<T>& v)
   {
-      TDynamicVector<T> res(sz);
+      if (sz != v.size()) {
+          throw std::invalid_argument("Matrix and vector dimensions don't match for multiplication");
+	  }
+      TDynamicVector<T> result(sz);
       for (size_t i = 0; i < sz; i++) {
           for (size_t j = 0; j < sz; j++) {
-              res[i] += pMem[i][j] * v[j];;
+              result[i] += pMem[i][j] * v[j];;
           }
       }
-      return res;
+      return result;
   }
 
   // матрично-матричные операции
@@ -258,36 +290,46 @@ public:
           throw std::invalid_argument("Matrix dimensions don't match for multiplication");
       }
 
+	  TDynamicMatrix result(sz);
       for (size_t i = 0; i < sz; i++) {
           for (size_t j = 0; j < sz; j++) {
-              pMem[i][j] += m.pMem[i][j];
+              result[i][j] = pMem[i][j] + m.pMem[i][j];
           }
       }
+	  return result;
   }
   TDynamicMatrix operator-(const TDynamicMatrix& m)
   {
+      if (sz != m.sz) {
+          throw std::invalid_argument("Matrix dimensions don't match for multiplication");
+	  }
+
+	  TDynamicMatrix result(sz);
+
       for (size_t i = 0; i < sz; i++) {
           for (size_t j = 0; j < sz; j++) {
-              pMem[i][j] -= m.pMem[i][j];
+              result[i][j] = pMem[i][j] - m.pMem[i][j];
           }
       }
+	  return result;
   }
   TDynamicMatrix operator*(const TDynamicMatrix& m)
   {
       if (sz != m.sz) {
           throw std::invalid_argument("Matrix dimensions don't match for multiplication");
       }
-      TDynamicMatrix res(sz);
+
+      TDynamicMatrix result(sz);
 
       for (size_t i = 0; i < sz; i++) {
           for (size_t k = 0; k < sz; k++) {
               T temp = pMem[i][k];
               for (size_t j = 0; j < sz; j++) {
-                  res[i][j] += temp * m.pMem[k][j];
+                  result[i][j] += temp * m.pMem[k][j];
               }
           }
       }
-      return res;
+      return result;
   }
 
   // ввод/вывод
